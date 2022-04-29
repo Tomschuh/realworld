@@ -36,7 +36,7 @@ model Article {
   authorId Int
   favoritedBy User[] @relation("UserFavorites", references: [id])
   comments Comment[]
-  tags Tag[] @relation("ArticleTags", references: [id])
+  tagList Tag[] @relation("ArticleTags", references: [id])
 }
 
 model Tag {
