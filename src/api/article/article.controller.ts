@@ -1,21 +1,98 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { query } from 'express';
+import { JwtAuthGuard } from '../user/auth/jwt.guard';
 import { UserController } from '../user/user.controller';
 import { User } from '../user/user.decorator';
+import { ArticleRes, ArticlesRes, CommentRes, CommentsRes } from './article.interface';
 import { ArticleService } from './article.service';
-import { Article } from './interface/article.interface';
+import { CreateArticleDto } from './dto/create-article.dto';
+import { UpdateArticleDto } from './dto/update-article.dto';
 
 @Controller('articles')
 export class ArticleController {
     constructor(private articleService: ArticleService) {}
 
     @Get()
-    async findAll(): Promise<Article[]> {
-        return await this.articleService.findAll();
+    async findAll(
+        @Query() query: any, 
+        @User('userId') userId: number): Promise<ArticlesRes> {
+        return await this.articleService.findAll(query, userId);
+    }
+    @Get('feed')
+    async feed(
+        @Query() query: any, 
+        @User('userId') userId: number): Promise<ArticlesRes> {
+        return await this.articleService.feed(query, userId);
     }
 
     @Get(':slug')
-    async findOne(@Param('slug') slug: string, @User('userId') currentUserId: number) : Promise<any>{
+    async findOne(
+        @Param('slug') slug: string, 
+        @User('userId') currentUserId: number): Promise<ArticleRes>{
         return await this.articleService.findOne(slug, currentUserId);
+    }
+
+    @Post()
+    @UseGuards(JwtAuthGuard)
+    async create(
+        @Body('article') article: CreateArticleDto, 
+        @User('userId') currentUserId: number): Promise<ArticleRes> {
+        return await this.articleService.create(article, currentUserId);
+    }
+
+    @Put(':slug')
+    @UseGuards(JwtAuthGuard)
+    async update(
+        @Param('slug') slug: string,
+        @Body('article') article: UpdateArticleDto, 
+        @User('userId') currentUserId: number): Promise<ArticleRes> {
+        return await this.articleService.update(slug, article, currentUserId);
+    }
+
+    @Delete(':slug')
+    @UseGuards(JwtAuthGuard)
+    async delete(
+        @Param('slug') slug: string, 
+        @User('userId') currentUserId: number): Promise<void> {
+        return await this.articleService.delete(slug, currentUserId);
+    }
+
+    @Post(':slug/comments')
+    @UseGuards(JwtAuthGuard)
+    async createComment(
+        @Param('slug') slug: string, 
+        @Body('comment') comment: CreateCommentDto, 
+        @User('userId') currentUserId: number): Promise<CommentRes> {
+        return await this.articleService.createComment(slug, comment, currentUserId);
+    }
+
+    @Get(':slug/comments')
+    async findAllComments(
+        @Param('slug') slug: string, 
+        @User('userId') currentUserId: number): Promise<CommentsRes> {
+        return await this.articleService.findAllComments(slug, currentUserId);
+    }
+
+    @Delete(':slug/comments/:commentId')
+    @UseGuards(JwtAuthGuard)
+    async deleteComment(
+        @Param('slug') slug: string, 
+        @Param('commentId') commentId: number,
+        @User('userId') currentUserId: number): Promise<void> {
+        return await this.articleService.deleteComment(slug, commentId, currentUserId);
+    }
+
+    @Post(':slug/favorite')
+    @UseGuards(JwtAuthGuard)
+    async favorite(@Param('slug') slug: string, @User('userId') currentUserId: number): Promise<ArticleRes> {
+        return await this.articleService.favorite(slug, currentUserId);
+    }
+
+    @Post(':slug/unfavorite')
+    @UseGuards(JwtAuthGuard)
+    async unfavorite(@Param('slug') slug: string, @User('userId') currentUserId: number): Promise<ArticleRes> {
+        return await this.articleService.unfavorite(slug, currentUserId);
     }
 }
 
