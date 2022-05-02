@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { UserResponse } from '../user.interface';
+import { UserRes } from '../user.interface';
 import { AuthHelper } from './auth.helper';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
@@ -13,7 +13,7 @@ export class AuthService {
         private readonly authHelper : AuthHelper
     ) {}
 
-    async create(createUser: CreateUserDto) : Promise<UserResponse | never> {
+    async create(createUser: CreateUserDto) : Promise<UserRes | never> {
         let users: User[] = await this.prismaService.user.findMany({
             where: { 
                 OR : [
@@ -41,20 +41,20 @@ export class AuthService {
         return { user };
     }
 
-    async login(body: LoginUserDto) : Promise<UserResponse | never> {
-        const { email, password }: LoginUserDto = body;
-        const user = await this.prismaService.user.findUnique({
+    async login(body: LoginUserDto) : Promise<UserRes | never> {
+        const _user = await this.prismaService.user.findUnique({
             where: {
-                email: email
+                email: body.email
             }
         })
 
-        if (!user && user.password === await this.authHelper.encodePassword(password)) {
+        if (!_user && _user.password === await this.authHelper.encodePassword(body.password)) {
             throw new HttpException("Invalid username or password", HttpStatus.FORBIDDEN);
         }
 
-        const payload = {email: user.email, sub: user.id };
+        const payload = {email: _user.email, userId: _user.id };
         const token = this.authHelper.encodeJwtToken(payload)
+        const {password, ...user} = _user;
         return { user: {token, ...user} };
     }
 }

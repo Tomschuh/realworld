@@ -6,6 +6,6 @@ export interface UserData {
     image: string
 }
 
-export interface UserResponse {
+export interface UserRes {
     user: UserData
 }

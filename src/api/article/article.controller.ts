@@ -14,8 +14,8 @@ export class ArticleController {
     }
 
     @Get(':slug')
-    async findOne(@Param('slug') slug: string, @User('id') id: number) : Promise<any>{
-        return await this.articleService.findOne(slug);
+    async findOne(@Param('slug') slug: string, @User('userId') currentUserId: number) : Promise<any>{
+        return await this.articleService.findOne(slug, currentUserId);
     }
 }
 
