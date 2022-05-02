@@ -1,8 +1,8 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { ArticleHelper } from './article.helper';
 import { ArticleRes, ArticlesRes, CommentRes, CommentsRes } from './article.interface';
-import { articleInclude, listQuery } from './article.query';
+import { prepareArticleDataRes } from './article.mapper';
+import { articleInclude, createListWhereClause, listQuery } from './article.query-builder';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
@@ -11,11 +11,10 @@ import { UpdateArticleDto } from './dto/update-article.dto';
 export class ArticleService {
     constructor (
         private readonly prismaService: PrismaService,
-        private readonly articleHelper: ArticleHelper
     ) {}
 
     async findAll(query: any, userId: number): Promise<ArticlesRes> {
-        const whereClause = this.articleHelper.createListWhereClause(query);
+        const whereClause = createListWhereClause(query);
         const _listQuery = listQuery(whereClause, query);
         const articles = await this.prismaService.article.findMany(_listQuery);
 
@@ -23,7 +22,7 @@ export class ArticleService {
             where: { AND: whereClause }
         });
 
-        return { articles: articles.map(a => this.articleHelper.prepareArticleDataRes(userId, a)), articlesCount: articlesCount }
+        return { articles: articles.map(a => prepareArticleDataRes(userId, a)), articlesCount: articlesCount }
     }
 
     async feed(query: any, userId: number): Promise<ArticlesRes> {
@@ -39,7 +38,7 @@ export class ArticleService {
             where: whereClause
         });
 
-        return { articles: articles.map(a => this.articleHelper.prepareArticleDataRes(userId, a)), articlesCount: articlesCount }
+        return { articles: articles.map(a => prepareArticleDataRes(userId, a)), articlesCount: articlesCount }
     }
     
     async findOne(slug: string, userId?: number): Promise<any> {
@@ -50,7 +49,7 @@ export class ArticleService {
             include: articleInclude
         });
 
-        return { article : this.articleHelper.prepareArticleDataRes(userId, article) };
+        return { article : prepareArticleDataRes(userId, article) };
     }
 
     async create(articleDto: CreateArticleDto, userId: number) : Promise<ArticleRes> {
@@ -80,7 +79,7 @@ export class ArticleService {
             include: articleInclude
         });
 
-        return { article: this.articleHelper.prepareArticleDataRes(userId, article) }
+        return { article: prepareArticleDataRes(userId, article) }
     }
 
     async update(slug: string, artilceDto: UpdateArticleDto, currentUserId: number) : Promise<ArticleRes> {
@@ -98,7 +97,7 @@ export class ArticleService {
             include: articleInclude
         });
 
-        return { article: this.articleHelper.prepareArticleDataRes(currentUserId, article) }
+        return { article: prepareArticleDataRes(currentUserId, article) }
     }
 
     private async generateSlug(title: string): Promise<string> {
@@ -163,7 +162,7 @@ export class ArticleService {
     }
 
     async findAllComments(slug: string, currentUserId?: number): Promise<CommentsRes> {
-        const comments = this.prismaService.comment.findMany({
+        const comments = await this.prismaService.comment.findMany({
             where: {
                 article: {
                     slug: slug
@@ -196,11 +195,35 @@ export class ArticleService {
     }
 
     async favorite(slug: string, userId: number): Promise<ArticleRes> {
-       
+       const article = this.prismaService.article.update({
+           where: {
+               slug: slug,
+           },
+           data: {
+               favoritedBy: {
+                   connect: {
+                       id: userId,
+                   },
+               },
+           },
+       });
+       return { article: prepareArticleDataRes(userId, article) }
     }
 
     async unfavorite(slug: string, userId: number): Promise<ArticleRes> {
-
+        const article = this.prismaService.article.update({
+            where: {
+                slug: slug,
+            },
+            data: {
+                favoritedBy: {
+                    disconnect: {
+                        id: userId,
+                    },
+                },
+            },
+        });
+        return { article: prepareArticleDataRes(userId, article) }
     }
 }
 

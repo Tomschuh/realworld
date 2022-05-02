@@ -36,3 +36,33 @@ export const listQuery = (whereClause, query) => ({
         createdAt: 'desc' as const,
     }
 });
+
+export const createListWhereClause = (query: any) => {
+    const queries = [];
+    if ('tag' in query) {
+        queries.push({
+            tagList: {
+                contains: query.tag,
+            },
+        });
+    }
+    if ('author' in query) {
+        queries.push({
+            author: {
+                username: {
+                    equals: query.author,
+                },
+            },
+        });
+    }
+    if ('favorited' in query) {
+        queries.push({
+            favoritedBy: {
+                username: {
+                    equals: query.favorited,
+                },
+            },
+        });
+    }
+    return queries;
+}

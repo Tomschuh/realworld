@@ -1,12 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { query } from 'express';
 import { JwtAuthGuard } from '../user/auth/jwt.guard';
-import { UserController } from '../user/user.controller';
 import { User } from '../user/user.decorator';
 import { ArticleRes, ArticlesRes, CommentRes, CommentsRes } from './article.interface';
 import { ArticleService } from './article.service';
 import { CreateArticleDto } from './dto/create-article.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 
 @Controller('articles')
