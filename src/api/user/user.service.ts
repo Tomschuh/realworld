@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { catchNotFoundError } from 'src/shared/prisma.error.catch';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserRes } from './user.interface';
@@ -28,7 +29,8 @@ export class UserService {
                 ...userDto,
                 updatedAt: new Date()
             }
-        });
+        })
+        .catch((err) => catchNotFoundError(err));
 
         return { user: user };
     }

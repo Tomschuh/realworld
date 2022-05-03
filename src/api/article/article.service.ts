@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { catchNotFoundError } from "src/shared/prisma.error.catch";
 import { PrismaService } from "src/shared/prisma/prisma.service";
 import {
   ArticleRes,
@@ -120,19 +121,12 @@ export class ArticleService {
         },
         include: articleInclude,
       })
-      .catch((err) => this.catchNotFoundException(err));
+      .catch((err) => catchNotFoundError(err));
 
     return { article: mapArticleDataRes(currentUserId, article) };
   }
   // How to catch error from Prisma udpate? How to set default rejectOnNotFound findUnique?
-  catchNotFoundException(e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError) {
-      if (e.code == "P2025") {
-        throw new HttpException(`Article not found!`, HttpStatus.NOT_FOUND);
-      }
-    }
-    throw e;
-  }
+  
 
   private async generateSlug(title: string): Promise<string> {
     let slug: string = this.createSlug(title);
@@ -160,20 +154,14 @@ export class ArticleService {
 
   async delete(slug: string, currentUserId: number): Promise<void> {
     await this.isArticleOwner(slug, currentUserId);
-    try {
-      await this.prismaService.article.delete({
+
+    await this.prismaService.article
+      .delete({
         where: {
           slug: slug,
         },
-      });
-    } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        if (e.code == "P2025") {
-          throw new HttpException(`Article not found!`, HttpStatus.NOT_FOUND);
-        }
-      }
-      throw e;
-    }
+      })
+      .catch((err) => catchNotFoundError(err));
   }
 
   private async isArticleOwner(slug: string, currentUserId: number) {
@@ -238,7 +226,8 @@ export class ArticleService {
       where: {
         id: commentId,
       },
-    });
+    })
+    .catch((err) => catchNotFoundError(err));
   }
 
   private async isCommentOwner(commentId: number, currentUserId: number) {
@@ -266,7 +255,8 @@ export class ArticleService {
         },
       },
       include: articleInclude,
-    });
+    })
+    .catch((err) => catchNotFoundError(err));
 
     return { article: mapArticleDataRes(currentUserId, article) };
   }
@@ -284,7 +274,9 @@ export class ArticleService {
         },
       },
       include: articleInclude,
-    });
+    })
+    .catch((err) => catchNotFoundError(err));
+
     return { article: mapArticleDataRes(currentUserId, article) };
   }
 }

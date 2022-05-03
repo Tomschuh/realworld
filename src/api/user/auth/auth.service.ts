@@ -42,19 +42,19 @@ export class AuthService {
     }
 
     async login(body: LoginUserDto) : Promise<UserRes | never> {
-        const _user = await this.prismaService.user.findUnique({
+        const user = await this.prismaService.user.findUnique({
             where: {
                 email: body.email
             }
-        })
+        });
 
-        if (!_user && _user.password === await this.authHelper.encodePassword(body.password)) {
-            throw new HttpException("Invalid username or password", HttpStatus.FORBIDDEN);
+        if (user.password !== await this.authHelper.encodePassword(body.password)) {
+            throw new HttpException("Invalid username or password!", HttpStatus.UNAUTHORIZED);
         }
 
-        const payload = {email: _user.email, userId: _user.id };
+        const payload = {email: user.email, userId: user.id };
         const token = this.authHelper.encodeJwtToken(payload)
-        const {password, ...user} = _user;
-        return { user: {token, ...user} };
+        const {password, ...userData} = user;
+        return { user: {token, ...userData} };
     }
 }

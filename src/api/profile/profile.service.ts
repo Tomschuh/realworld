@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { catchNotFoundError } from 'src/shared/prisma.error.catch';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ProfileRes } from './profile.interface';
 import { profileInclude } from './profile.query';
@@ -30,7 +31,8 @@ export class ProfileService {
                 },
             },
             include: profileInclude
-        });
+        })
+        .catch((err) => catchNotFoundError(err));
         const {followedBy, password, updatedAt, createdAt, email, ...profile} = user;
 
         return { profile: { ...profile, following: this.following(followedBy, currentUserId) } }
@@ -47,7 +49,8 @@ export class ProfileService {
                 },
             },
             include: profileInclude
-        });
+        })
+        .catch((err) => catchNotFoundError(err));
         const {followedBy, password, updatedAt, createdAt, email, ...profile} = user;
 
         return { profile: { ...profile, following: this.following(followedBy, currentUserId) } }
