@@ -27,10 +27,23 @@ export interface ArticlesRes {
     articlesCount: number
 }
 
+export interface CommentData {
+    id: number,
+    createdAt: string,
+    updatedAt?: string,
+    body: string,
+    author: {
+        username: string,
+        bio?: string,
+        image?: string,
+        following: boolean
+    }
+}
+
 export interface CommentRes {
-    comment: Comment
+    comment: CommentData
 }
 
 export interface CommentsRes {
-    comments: Comment[]
+    comments: CommentData[]
 }

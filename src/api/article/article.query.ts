@@ -3,7 +3,11 @@ const authorInclude = {
         username: true,
         bio: true,
         image: true,
-        following: true
+        followedBy: {
+            select: {
+                id: true,
+            },
+        },
     }
 }
 
@@ -25,7 +29,15 @@ export const articleInclude = {
     favoritedBy: favoritedByInclude,
 }
 
-export const listQuery = (whereClause, query) => ({
+export const commentSelect = {
+    id: true,
+    body: true,
+    createdAt: true,
+    updatedAt: true,
+    author: authorInclude,
+}
+
+export const listQuery = (whereClause: any, query: any) => ({
     where: {
         AND: whereClause,
     },
@@ -42,7 +54,9 @@ export const createListWhereClause = (query: any) => {
     if ('tag' in query) {
         queries.push({
             tagList: {
-                contains: query.tag,
+                 some: {
+                     name: query.tag,
+                 }
             },
         });
     }
@@ -58,8 +72,8 @@ export const createListWhereClause = (query: any) => {
     if ('favorited' in query) {
         queries.push({
             favoritedBy: {
-                username: {
-                    equals: query.favorited,
+                some: {
+                    username: query.favorited,
                 },
             },
         });

@@ -1,8 +1,8 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ArticleRes, ArticlesRes, CommentRes, CommentsRes } from './article.interface';
-import { prepareArticleDataRes } from './article.mapper';
-import { articleInclude, createListWhereClause, listQuery } from './article.query-builder';
+import { mapArticleDataRes, mapCommentDataRes } from './article.mapper';
+import { articleInclude, commentSelect, createListWhereClause, listQuery } from './article.query';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
@@ -13,7 +13,7 @@ export class ArticleService {
         private readonly prismaService: PrismaService,
     ) {}
 
-    async findAll(query: any, userId: number): Promise<ArticlesRes> {
+    async findAll(query: any, currentUserId: number): Promise<ArticlesRes> {
         const whereClause = createListWhereClause(query);
         const _listQuery = listQuery(whereClause, query);
         const articles = await this.prismaService.article.findMany(_listQuery);
@@ -21,14 +21,13 @@ export class ArticleService {
         const articlesCount = await this.prismaService.article.count({
             where: { AND: whereClause }
         });
-
-        return { articles: articles.map(a => prepareArticleDataRes(userId, a)), articlesCount: articlesCount }
+        return { articles: articles.map(a => mapArticleDataRes(currentUserId, a)), articlesCount: articlesCount }
     }
 
-    async feed(query: any, userId: number): Promise<ArticlesRes> {
+    async feed(query: any, currentUserId: number): Promise<ArticlesRes> {
         const whereClause = {
             author: {
-              followedBy: { some: { id: userId } }
+              followedBy: { some: { id: currentUserId } }
             }
         };
         const _listQuery = listQuery(whereClause, query);
@@ -38,10 +37,10 @@ export class ArticleService {
             where: whereClause
         });
 
-        return { articles: articles.map(a => prepareArticleDataRes(userId, a)), articlesCount: articlesCount }
+        return { articles: articles.map(a => mapArticleDataRes(currentUserId, a)), articlesCount: articlesCount }
     }
     
-    async findOne(slug: string, userId?: number): Promise<any> {
+    async findOne(slug: string, currentUserId?: number): Promise<any> {
         let article: any = await this.prismaService.article.findUnique({
             where: { 
                 slug: slug,
@@ -49,17 +48,17 @@ export class ArticleService {
             include: articleInclude
         });
 
-        return { article : prepareArticleDataRes(userId, article) };
+        return { article : mapArticleDataRes(currentUserId, article) };
     }
 
-    async create(articleDto: CreateArticleDto, userId: number) : Promise<ArticleRes> {
+    async create(articleDto: CreateArticleDto, currentUserId: number) : Promise<ArticleRes> {
         const {tagList, ..._article} = articleDto;
         const article = await this.prismaService.article.create({ 
             data: {
                 slug: await this.generateSlug(articleDto.title),
                 author: {
                     connect: {
-                        id: userId
+                        id: currentUserId
                     }
                 },
                 tagList: {
@@ -79,7 +78,7 @@ export class ArticleService {
             include: articleInclude
         });
 
-        return { article: prepareArticleDataRes(userId, article) }
+        return { article: mapArticleDataRes(currentUserId, article) }
     }
 
     async update(slug: string, artilceDto: UpdateArticleDto, currentUserId: number) : Promise<ArticleRes> {
@@ -97,13 +96,13 @@ export class ArticleService {
             include: articleInclude
         });
 
-        return { article: prepareArticleDataRes(currentUserId, article) }
+        return { article: mapArticleDataRes(currentUserId, article) }
     }
 
     private async generateSlug(title: string): Promise<string> {
         let slug : string = this.createSlug(title);
         let i : number = 1;
-        while(await this.isSlugUnique(slug)) {
+        while(!(await this.isSlugUnique(slug))) {
             slug = this.createSlug(title + ` ${i}`);
         }
         return slug;
@@ -124,22 +123,21 @@ export class ArticleService {
         }));
     }
 
-    async delete(slug: string, userId: number): Promise<void> {
-        this.isArticleOwner(slug, userId);
-        this.prismaService.article.delete({
+    async delete(slug: string, currentUserId: number): Promise<void> {
+        this.isArticleOwner(slug, currentUserId);
+        await this.prismaService.article.delete({
             where: {
-                slug: slug
+                slug: slug,
             }
-        })
+        });
     }
 
     private async isArticleOwner(slug: string, currentUserId: number) {
         let article: any = await this.prismaService.article.findUnique({
             where: {
-                slug: slug
-            }
+                slug: slug,
+            },
         });
-        
         if (article.authorId !== currentUserId) {
             throw new HttpException('Permission denied!', HttpStatus.FORBIDDEN);
         }
@@ -155,27 +153,29 @@ export class ArticleService {
                     connect: { slug: slug }
                 },
                 body: commentDto.body,
-            }
+            },
+            select: commentSelect,
         });
 
-        return { comment: comment };
+        return { comment: mapCommentDataRes(currentUserId, comment) };
     }
 
     async findAllComments(slug: string, currentUserId?: number): Promise<CommentsRes> {
-        const comments = await this.prismaService.comment.findMany({
+        let comments = await this.prismaService.comment.findMany({
             where: {
                 article: {
                     slug: slug
                 }
-            }
+            },
+            select: commentSelect,
         });
-
-        return { comments: comments };
+  
+        return { comments:  comments.map(c => mapCommentDataRes(currentUserId, c))};
     }
 
     async deleteComment(slug: string, commentId: number, currentUserId: number): Promise<void> {
         this.isCommentOwner(commentId, currentUserId);
-        this.prismaService.comment.delete({
+        await this.prismaService.comment.delete({
             where: {
                 id: commentId
             }
@@ -194,36 +194,39 @@ export class ArticleService {
         }
     }
 
-    async favorite(slug: string, userId: number): Promise<ArticleRes> {
-       const article = this.prismaService.article.update({
+    async favorite(slug: string, currentUserId: number): Promise<ArticleRes> {
+       const article = await this.prismaService.article.update({
            where: {
                slug: slug,
            },
            data: {
                favoritedBy: {
                    connect: {
-                       id: userId,
+                       id: currentUserId,
                    },
                },
            },
+           include: articleInclude
        });
-       return { article: prepareArticleDataRes(userId, article) }
+    
+       return { article: mapArticleDataRes(currentUserId, article) }
     }
 
-    async unfavorite(slug: string, userId: number): Promise<ArticleRes> {
-        const article = this.prismaService.article.update({
+    async unfavorite(slug: string, currentUserId: number): Promise<ArticleRes> {
+        const article = await this.prismaService.article.update({
             where: {
                 slug: slug,
             },
             data: {
                 favoritedBy: {
                     disconnect: {
-                        id: userId,
+                        id: currentUserId,
                     },
                 },
             },
+            include: articleInclude
         });
-        return { article: prepareArticleDataRes(userId, article) }
+        return { article: mapArticleDataRes(currentUserId, article) }
     }
 }
 

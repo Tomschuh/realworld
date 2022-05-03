@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../user/auth/jwt.guard';
 import { User } from '../user/user.decorator';
 import { ArticleRes, ArticlesRes, CommentRes, CommentsRes } from './article.interface';
@@ -76,7 +76,7 @@ export class ArticleController {
     @UseGuards(JwtAuthGuard)
     async deleteComment(
         @Param('slug') slug: string, 
-        @Param('commentId') commentId: number,
+        @Param('commentId', ParseIntPipe) commentId: number,
         @User('userId') currentUserId: number): Promise<void> {
         return await this.articleService.deleteComment(slug, commentId, currentUserId);
     }
@@ -87,7 +87,7 @@ export class ArticleController {
         return await this.articleService.favorite(slug, currentUserId);
     }
 
-    @Post(':slug/unfavorite')
+    @Delete(':slug/favorite')
     @UseGuards(JwtAuthGuard)
     async unfavorite(@Param('slug') slug: string, @User('userId') currentUserId: number): Promise<ArticleRes> {
         return await this.articleService.unfavorite(slug, currentUserId);
