@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ProfileRes } from './profile.interface';
+import { profileInclude } from './profile.query';
 
 @Injectable()
 export class ProfileService {
@@ -10,16 +11,8 @@ export class ProfileService {
 
     async findOne(username: string, currentUserId: number): Promise<ProfileRes> {
         const user = await this.prismaService.user.findUnique({
-            where: {
-                username: username
-            },
-            include: {
-                followedBy: {
-                    select: {
-                        id: true,
-                    },
-                },
-            },
+            where: { username: username },
+            include: profileInclude
         });
         const {followedBy, password, updatedAt, createdAt, email, ...profile} = user;
 
@@ -28,9 +21,7 @@ export class ProfileService {
 
     async follow(username: string, currentUserId: number): Promise<ProfileRes> {
         const user = await this.prismaService.user.update({
-            where: {
-                username: username
-            },
+            where: { username: username },
             data: {
                 followedBy: {
                     connect: {
@@ -38,13 +29,7 @@ export class ProfileService {
                     },
                 },
             },
-            include: {
-                followedBy: {
-                    select: {
-                        id: true,
-                    },
-                },
-            },
+            include: profileInclude
         });
         const {followedBy, password, updatedAt, createdAt, email, ...profile} = user;
 
@@ -53,9 +38,7 @@ export class ProfileService {
 
     async unfollow(username: string, currentUserId: number): Promise<ProfileRes> {
         let user = await this.prismaService.user.update({
-            where: {
-                username: username
-            },
+            where: { username: username },
             data: {
                 followedBy: {
                     disconnect: {
@@ -63,13 +46,7 @@ export class ProfileService {
                     },
                 },
             },
-            include: {
-                followedBy: {
-                    select: {
-                        id: true,
-                    },
-                },
-            },
+            include: profileInclude
         });
         const {followedBy, password, updatedAt, createdAt, email, ...profile} = user;
 
