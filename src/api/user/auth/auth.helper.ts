@@ -1,19 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+const jwt = require('jsonwebtoken');
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthHelper {
-    constructor(
-        private readonly jwtService: JwtService
-    ) {}
     
     decodeJwtToken(token: string): unknown {
-        return this.jwtService.decode(token, null);
+        return jwt.decode(token, null);
     }
 
     encodeJwtToken(payload: object) : string {
-        return this.jwtService.sign(payload);
+        return jwt.sign(payload);
     }
 
     async encodePassword(password: string): Promise<string> {

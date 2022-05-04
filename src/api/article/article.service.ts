@@ -1,7 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
-import { catchNotFoundError } from "src/shared/prisma.error.catch";
-import { PrismaService } from "src/shared/prisma/prisma.service";
+import { catchNotFoundError } from "@shared/prisma/prisma.error.catch";
+import { PrismaService } from "@shared/prisma/prisma.service";
 import {
   ArticleRes,
   ArticlesRes,
@@ -23,7 +22,7 @@ import { UpdateArticleDto } from "./dto/update-article.dto";
 export class ArticleService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async findAll(query: any, currentUserId: number): Promise<ArticlesRes> {
+  async findAll(query: any, currentUserId?: number): Promise<ArticlesRes> {
     const whereClause = createListWhereClause(query);
     const _listQuery = listQuery(whereClause, query);
     const articles = await this.prismaService.article.findMany(_listQuery);
@@ -149,6 +148,7 @@ export class ArticleService {
       where: {
         slug: slug,
       },
+      rejectOnNotFound: false
     }));
   }
 

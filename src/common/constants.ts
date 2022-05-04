@@ -1,4 +1,4 @@
 export const authConstants = {
-    secret: 'secret',
-    expiration: '300000s',
+    secret: process.env.JWT_SECRET,
+    expiration: process.env.JWT_EXPIRATION,
 };

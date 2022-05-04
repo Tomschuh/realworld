@@ -36,7 +36,10 @@ export class ArticleController {
     async create(
         @Body('article') article: CreateArticleDto, 
         @User('userId') currentUserId: number): Promise<ArticleRes> {
-        return await this.articleService.create(article, currentUserId);
+        let test : ArticleRes = (await this.articleService.create(article, currentUserId));
+        console.log(test);
+        console.log(typeof test.article.createdAt)
+        return test;
     }
 
     @Put(':slug')

@@ -1,4 +1,4 @@
-import { BadRequestException, HttpException, ValidationPipe } from '@nestjs/common';
+import { HttpException, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ValidationError } from 'class-validator';
 import { AppModule } from './app.module';
@@ -13,8 +13,8 @@ async function bootstrap() {
       })
       return new HttpException(errorRes, 422);
     }
-  }));
+  })).setGlobalPrefix(process.env.API_PREFIX);
   process.env.TZ = 'Europe/Prague';
-  await app.listen(3000);
+  await app.listen(process.env.API_PORT);
 }
 bootstrap();

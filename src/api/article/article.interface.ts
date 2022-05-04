@@ -1,5 +1,3 @@
-import { Comment } from "@prisma/client"
-
 export interface ArticleData {
     slug: string,
     title: string,
