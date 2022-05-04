@@ -14,6 +14,7 @@ async function bootstrap() {
       return new HttpException(errorRes, 422);
     }
   }));
+  process.env.TZ = 'Europe/Prague';
   await app.listen(3000);
 }
 bootstrap();
