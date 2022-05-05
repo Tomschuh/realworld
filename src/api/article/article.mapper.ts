@@ -8,7 +8,7 @@ export const mapArticleDataRes = (currentUserId: number, {favoritedBy, author, .
         description: article.description,
         body: article.body,
         createdAt: article.createdAt.toISOString(),
-        updatedAt: article.updatedAt.toISOString(),
+        updatedAt: article.updatedAt ? article.updatedAt.toISOString() : null,
         author: {
             ...authorData,
             following: mapAuthorFollowings(followedBy, currentUserId)

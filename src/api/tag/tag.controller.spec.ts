@@ -9,10 +9,7 @@ describe('TagController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TagController],
-      providers: [
-        TagService, 
-        PrismaService
-      ]
+      providers: [TagService, PrismaService],
     }).compile();
 
     controller = module.get<TagController>(TagController);

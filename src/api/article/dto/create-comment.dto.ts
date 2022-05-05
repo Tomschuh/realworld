@@ -1,6 +1,10 @@
-import { IsNotEmpty } from "class-validator";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty } from 'class-validator';
 
 export class CreateCommentDto {
-    @IsNotEmpty()
-    body: string;
+  @ApiProperty({
+    required: true
+  })
+  @IsNotEmpty()
+  body: string;
 }

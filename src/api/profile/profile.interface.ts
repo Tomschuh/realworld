@@ -1,10 +1,10 @@
 export interface ProfileRes {
-    profile: ProfileData
+  profile: ProfileData;
 }
 
 export interface ProfileData {
-    username: string,
-    bio?: string,
-    image?: string,
-    following: boolean
+  username: string;
+  bio?: string;
+  image?: string;
+  following: boolean;
 }

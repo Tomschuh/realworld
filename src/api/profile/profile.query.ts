@@ -1,7 +1,7 @@
 export const profileInclude = {
-    followedBy: {
-        select: {
-            id: true,
-        },
+  followedBy: {
+    select: {
+      id: true,
     },
-}
+  },
+};
