@@ -1,3 +1,3 @@
 export interface TagListRes {
-    tags: string[]
+  tags: string[];
 }

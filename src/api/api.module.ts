@@ -6,11 +6,7 @@ import { ProfileController } from './profile/profile.controller';
 import { ProfileModule } from './profile/profile.module';
 import { TagModule } from './tag/tag.module';
 
-@Module({imports:[
-    ArticleModule,
-    AuthModule,
-    UserModule,
-    ProfileModule,
-    TagModule
-]})
+@Module({
+  imports: [ArticleModule, AuthModule, UserModule, ProfileModule, TagModule],
+})
 export class ApiModule {}
