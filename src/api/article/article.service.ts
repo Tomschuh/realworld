@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { PaginationDto } from '@shared/dto/pagination.dto';
 import { catchNotFoundError } from '@shared/prisma/prisma.error.catch';
 import { PrismaService } from '@shared/prisma/prisma.service';
 import {
@@ -10,17 +11,17 @@ import {
 import { mapArticleDataRes, mapCommentDataRes } from './article.mapper';
 import {
   articleInclude,
-  commentSelect,
+  commentInclude,
   createListWhereClause,
-  listQuery,
-} from './article.query';
+} from './article.prisma.query';
+import { ArticleListQueryDto } from './dto/article-list-query.dto';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 
 /**
- * {@link ArticleService} 
- * 
+ * {@link ArticleService}
+ *
  * @author Tom Schuh
  */
 @Injectable()
@@ -28,21 +29,35 @@ export class ArticleService {
   constructor(private readonly prismaService: PrismaService) {}
 
   /**
-   * Finds and returns list of articles filtered by query.
-   * Articles are sorted by most recent.
-   * 
+   * Finds and returns list of articles filtered by query {@link }.
+   * The articles are sorted by most recent.
+   *
    * @param query contains query used for filter list of articles.
    * @param currentUserId identificator of currently logged user.
    * @returns list of articles in wrapper object {@link ArticlesRes}
    */
-  async findAll(query: any, currentUserId?: number): Promise<ArticlesRes> {
+  async findAll(
+    query: ArticleListQueryDto,
+    currentUserId?: number
+  ): Promise<ArticlesRes> {
     const whereClause = createListWhereClause(query);
-    const _listQuery = listQuery(whereClause, query);
-    const articles = await this.prismaService.article.findMany(_listQuery);
+
+    const articles = await this.prismaService.article.findMany({
+      where: {
+        AND: whereClause,
+      },
+      include: articleInclude,
+      ...(query.limit ? { take: query.limit } : {}),
+      ...(query.offset ? { skip: query.offset } : {}),
+      orderBy: {
+        createdAt: 'desc' as const,
+      },
+    });
 
     const articlesCount = await this.prismaService.article.count({
       where: { AND: whereClause },
     });
+
     return {
       articles: articles.map((a) => mapArticleDataRes(currentUserId, a)),
       articlesCount: articlesCount,
@@ -52,21 +67,36 @@ export class ArticleService {
   /**
    * Finds and returns list of articles filtered by query and only from user's following.
    * Articles are sorted by most recent.
-   * 
+   *
    * @param query contains query used for filter list of articles.
    * @param currentUserId identificator of currently logged user.
    * @returns list of articles in wrapper object {@link ArticlesRes}
    */
-  async feed(query: any, currentUserId: number): Promise<ArticlesRes> {
+  async feed(
+    query: PaginationDto,
+    currentUserId: number
+  ): Promise<ArticlesRes> {
     const whereClause = {
       author: {
         followedBy: { some: { id: currentUserId } },
       },
     };
-    const _listQuery = listQuery(whereClause, query);
-    const articles = await this.prismaService.article.findMany(_listQuery);
 
-    let articlesCount = await this.prismaService.article.count({
+    const articles = await this.prismaService.article.findMany({
+      where: {
+        author: {
+          followedBy: { some: { id: currentUserId } },
+        },
+      },
+      include: articleInclude,
+      ...(query.limit ? { take: query.limit } : {}),
+      ...(query.offset ? { skip: query.offset } : {}),
+      orderBy: {
+        createdAt: 'desc' as const,
+      },
+    });
+
+    const articlesCount = await this.prismaService.article.count({
       where: whereClause,
     });
 
@@ -77,26 +107,30 @@ export class ArticleService {
   }
 
   /**
-   * Finds and returns single article by given slug.
-   * 
+   * Finds and returns one an article by given slug.
+   *
    * @param slug article identificator.
    * @param currentUserId identificator of currently logged user.
-   * @returns single article in wrapper object {@link ArticleRes}.
+   * @returns one article in wrapper object {@link ArticleRes}.
    */
   async findOne(slug: string, currentUserId?: number): Promise<ArticleRes> {
-    let article: any = await this.prismaService.article.findUnique({
-      where: {
-        slug: slug,
-      },
-      include: articleInclude,
-    });
+    try {
+      const article = await this.prismaService.article.findUnique({
+        where: {
+          slug: slug,
+        },
+        include: articleInclude,
+      });
 
-    return { article: mapArticleDataRes(currentUserId, article) };
+      return { article: mapArticleDataRes(currentUserId, article) };
+    } catch (error) {
+      catchNotFoundError(error);
+    }
   }
 
   /**
-   * Creates article according to dto object.
-   * 
+   * Creates an article according to dto object.
+   *
    * @param articleDto object contianing data for article creation.
    * @param currentUserId identificator of currently logged user.
    * @returns single article in wrapper object {@link ArticleRes}.
@@ -135,8 +169,8 @@ export class ArticleService {
   }
 
   /**
-   * Updates article by given dto object.
-   * 
+   * Updates an article by given dto object.
+   *
    * @param slug article identificator.
    * @param articleDto object contianing data for article creation.
    * @param currentUserId identificator of currently logged user.
@@ -144,31 +178,38 @@ export class ArticleService {
    */
   async update(
     slug: string,
-    artilceDto: UpdateArticleDto,
+    articleDto: UpdateArticleDto,
     currentUserId: number
   ): Promise<ArticleRes> {
     await this.isArticleOwner(slug, currentUserId);
-
-    const article = await this.prismaService.article
-      .update({
+    try {
+      const article = await this.prismaService.article.update({
         where: {
           slug: slug,
         },
         data: {
-          ...artilceDto,
+          ...articleDto,
           updatedAt: new Date(),
-          ...('title' in artilceDto
-            ? { slug: await this.generateSlug(artilceDto.title) }
+          ...('title' in articleDto
+            ? { slug: await this.generateSlug(articleDto.title) }
             : {}),
         },
         include: articleInclude,
-      })
-      .catch((err) => catchNotFoundError(err));
+      });
 
-    return { article: mapArticleDataRes(currentUserId, article) };
+      return { article: mapArticleDataRes(currentUserId, article) };
+    } catch (error) {
+      catchNotFoundError(error);
+    }
   }
-  // How to catch error from Prisma udpate? How to set default rejectOnNotFound findUnique?
 
+  /**
+   * Generates slug according to article title and check if is slug unique.
+   * If not, an incremental number will be added to the end of the line.
+   *
+   * @param title article title.
+   * @returns generated slug.
+   */
   private async generateSlug(title: string): Promise<string> {
     let slug: string = this.createSlug(title);
     let i: number = 1;
@@ -181,6 +222,7 @@ export class ArticleService {
   private createSlug(title: string): string {
     return title
       .toLowerCase()
+      .replace('-', '')
       .replace(/ /g, '-')
       .replace(/[^\w-]+/g, '');
   }
@@ -195,39 +237,51 @@ export class ArticleService {
   }
 
   /**
-   * Delete article of logged user.
-   * 
+   * Delete article owned by logged user.
+   *
    * @param slug article identificator.
    * @param currentUserId identificator of currently logged user.
    */
   async delete(slug: string, currentUserId: number): Promise<void> {
     await this.isArticleOwner(slug, currentUserId);
-
-    await this.prismaService.article
-      .delete({
+    try {
+      await this.prismaService.article.delete({
         where: {
           slug: slug,
         },
-      })
-      .catch((err) => catchNotFoundError(err));
-  }
-
-  private async isArticleOwner(slug: string, currentUserId: number) {
-    let article: any = await this.prismaService.article.findUnique({
-      where: {
-        slug: slug,
-      },
-      rejectOnNotFound: (err) =>
-        new HttpException('Article not found', HttpStatus.NOT_FOUND),
-    });
-    if (article.authorId !== currentUserId) {
-      throw new HttpException('Permission denied!', HttpStatus.FORBIDDEN);
+      });
+    } catch (error) {
+      catchNotFoundError(error);
     }
   }
 
   /**
-   * Creates comment for single article according to dto object.
-   * 
+   * Finds an article and check if an user is an owner.
+   *
+   * @param slug article identificator.
+   * @param userId user identificator.
+   */
+  private async isArticleOwner(slug: string, userId: number) {
+    try {
+      const article = await this.prismaService.article.findUnique({
+        where: {
+          slug: slug,
+        },
+      });
+      if (article.authorId !== userId) {
+        throw new HttpException(
+          'Only the article owner can manipulate the article!',
+          HttpStatus.FORBIDDEN
+        );
+      }
+    } catch (error) {
+      catchNotFoundError(error);
+    }
+  }
+
+  /**
+   * Creates a {@link Comment} according to dto object for an article.
+   *
    * @param slug article identificator.
    * @param commentDto contians data for article creation.
    * @param currentUserId identificator of currently logged user.
@@ -248,15 +302,15 @@ export class ArticleService {
         },
         body: commentDto.body,
       },
-      select: commentSelect,
+      include: commentInclude,
     });
 
     return { comment: mapCommentDataRes(currentUserId, comment) };
   }
 
   /**
-   * Finds and returns all comments of one article.
-   * 
+   * Finds and returns all comments of one an article.
+   *
    * @param slug article identificator.
    * @param currentUserId identificator of currently logged user.
    * @returns list of comments in wrapper object {@link CommentsRes}.
@@ -265,13 +319,13 @@ export class ArticleService {
     slug: string,
     currentUserId?: number
   ): Promise<CommentsRes> {
-    let comments = await this.prismaService.comment.findMany({
+    const comments = await this.prismaService.comment.findMany({
       where: {
         article: {
           slug: slug,
         },
       },
-      select: commentSelect,
+      include: commentInclude,
     });
 
     return {
@@ -281,7 +335,7 @@ export class ArticleService {
 
   /**
    * Delete logged user's comment.
-   * 
+   *
    * @param slug article identificator.
    * @param commentId comment identificator.
    * @param currentUserId identificator of currently logged user.
@@ -292,37 +346,52 @@ export class ArticleService {
     currentUserId: number
   ): Promise<void> {
     this.isCommentOwner(commentId, currentUserId);
-    await this.prismaService.comment
-      .delete({
+    try {
+      await this.prismaService.comment.delete({
         where: {
           id: commentId,
         },
-      })
-      .catch((err) => catchNotFoundError(err));
-  }
-
-  private async isCommentOwner(commentId: number, currentUserId: number) {
-    let comment: any = await this.prismaService.comment.findUnique({
-      where: {
-        id: commentId,
-      },
-    });
-
-    if (comment.authorId !== currentUserId) {
-      throw new HttpException('Permission denied!', HttpStatus.FORBIDDEN);
+      });
+    } catch (error) {
+      catchNotFoundError(error);
     }
   }
 
   /**
-   * Add article to user's favorite articles.
-   * 
+   * Finds an comment and check if an user is an owner.
+   *
+   * @param commentId comment identificator.
+   * @param userId user identificator.
+   */
+  private async isCommentOwner(commentId: number, userId: number) {
+    try {
+      const comment = await this.prismaService.comment.findUnique({
+        where: {
+          id: commentId,
+        },
+      });
+
+      if (comment.authorId !== userId) {
+        throw new HttpException(
+          'Only the comment owner can manipulate the comment.',
+          HttpStatus.FORBIDDEN
+        );
+      }
+    } catch (error) {
+      catchNotFoundError(error);
+    }
+  }
+
+  /**
+   * Adds an article to user's favorite articles.
+   *
    * @param slug article identificator.
    * @param currentUserId identificator of currently logged user.
    * @returns favorite article in wrapper object {@link ArticleRes}.
    */
   async favorite(slug: string, currentUserId: number): Promise<ArticleRes> {
-    const article = await this.prismaService.article
-      .update({
+    try {
+      const article = await this.prismaService.article.update({
         where: {
           slug: slug,
         },
@@ -334,22 +403,24 @@ export class ArticleService {
           },
         },
         include: articleInclude,
-      })
-      .catch((err) => catchNotFoundError(err));
+      });
 
-    return { article: mapArticleDataRes(currentUserId, article) };
+      return { article: mapArticleDataRes(currentUserId, article) };
+    } catch (error) {
+      catchNotFoundError(error);
+    }
   }
 
   /**
-   * Remove article from user's favorite articles.
-   * 
+   * Removes an article from user's favorite articles.
+   *
    * @param slug article identificator.
    * @param currentUserId identificator of currently logged user.
    * @returns favorite article in wrapper object {@link ArticleRes}.
    */
   async unfavorite(slug: string, currentUserId: number): Promise<ArticleRes> {
-    const article = await this.prismaService.article
-      .update({
+    try {
+      const article = await this.prismaService.article.update({
         where: {
           slug: slug,
         },
@@ -361,9 +432,10 @@ export class ArticleService {
           },
         },
         include: articleInclude,
-      })
-      .catch((err) => catchNotFoundError(err));
-
-    return { article: mapArticleDataRes(currentUserId, article) };
+      });
+      return { article: mapArticleDataRes(currentUserId, article) };
+    } catch (error) {
+      catchNotFoundError(error);
+    }
   }
 }

@@ -86,7 +86,7 @@ describe('ArticleController', () => {
     it('Should return an feed (array) of articles', async () => {
       const spy = jest.spyOn(service, 'feed').mockResolvedValue(articleList);
       const feed = controller.feed({}, undefined);
-      expect(spy).toBeCalledWith(expect.any(Object), undefined);
+      expect(spy).toBeCalledWith({}, undefined);
       expect(await feed).toBe(articleList);
     });
   });

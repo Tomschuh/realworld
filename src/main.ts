@@ -2,6 +2,7 @@ import { HttpException, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { errorDto } from '@shared/dto/error.dto';
 import { ValidationError } from 'class-validator';
 import { AppModule } from './app.module';
 
@@ -12,11 +13,11 @@ async function bootstrap() {
     .useGlobalPipes(
       new ValidationPipe({
         exceptionFactory: (validationErrors: ValidationError[] = []) => {
-          const errorRes = { errors: {} };
+          let errors : errorDto = {};
           validationErrors.forEach((er) => {
-            errorRes.errors[er.property] = Object.values(er.constraints);
+            errors[er.property] = Object.values(er.constraints);
           });
-          return new HttpException(errorRes, 422);
+          return new HttpException( {errors : errors} , 422);
         },
       })
     )
@@ -38,7 +39,9 @@ async function bootstrap() {
     app,
     document
   );
-
-  await app.listen(configService.get<number>('API_PORT', 3000));
+  const port = configService.get<number>('API_PORT');
+  
+  console.log(port);
+  await app.listen(port);
 }
 bootstrap();

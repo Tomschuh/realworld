@@ -1,4 +1,4 @@
-export interface ArticleData {
+export class ArticleData {
   slug: string;
   title: string;
   description: string;
@@ -16,16 +16,16 @@ export interface ArticleData {
   };
 }
 
-export interface ArticleRes {
+export class ArticleRes {
   article: ArticleData;
 }
 
-export interface ArticlesRes {
+export class ArticlesRes {
   articles: ArticleData[];
   articlesCount: number;
 }
 
-export interface CommentData {
+export class CommentData {
   id: number;
   createdAt: string;
   updatedAt?: string;

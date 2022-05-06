@@ -1,9 +1,11 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { PaginationDto } from '@shared/dto/pagination.dto';
 import { JwtAuthGuard } from '../user/auth/jwt.guard';
 import { User } from '../user/user.decorator';
 import { ArticleRes, ArticlesRes, CommentRes, CommentsRes } from './article.interface';
 import { ArticleService } from './article.service';
+import { ArticleListQueryDto } from './dto/article-list-query.dto';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
@@ -28,7 +30,7 @@ export class ArticleController {
     @ApiResponse({status: 200, description: 'List of articles successfully return.'})
     @ApiResponse({status: 400, description: 'Invalid request.'})
     async findAll(
-        @Query() query: any, 
+        @Query() query: ArticleListQueryDto, 
         @User('userId') userId: number): Promise<ArticlesRes> {
         return await this.articleService.findAll(query, userId);
     }
@@ -41,7 +43,7 @@ export class ArticleController {
     @ApiResponse({status: 200, description: 'List of articles successfully return.'})
     @ApiResponse({status: 400, description: 'Invalid request.'})
     async feed(
-        @Query() query: any, 
+        @Query() query: PaginationDto, 
         @User('userId') userId: number): Promise<ArticlesRes> {
         return await this.articleService.feed(query, userId);
     }

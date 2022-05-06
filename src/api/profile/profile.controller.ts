@@ -4,17 +4,9 @@ import {
   Get,
   HttpCode,
   Param,
-  Post,
-  Res,
-  UseGuards,
+  Post, UseGuards
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
-import { response } from 'express';
+import { ApiBearerAuth, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../user/auth/jwt.guard';
 import { User } from '../user/user.decorator';
 import { ProfileRes } from './profile.interface';
@@ -22,7 +14,7 @@ import { ProfileService } from './profile.service';
 
 /**
  * {@link ProfileController} is handling communication with profile module.
- * 
+ *
  * @author Tom Schuh
  */
 @ApiTags('profiles')
@@ -52,12 +44,9 @@ export class ProfileController {
   @UseGuards(JwtAuthGuard)
   async follow(
     @Param('username') username: string,
-    @User('userId') currentUserId: number,
-    @Res() response: any
+    @User('userId') currentUserId: number
   ): Promise<ProfileRes> {
-    return response
-      .status(200)
-      .send(await this.profileService.follow(username, currentUserId));
+    return await this.profileService.follow(username, currentUserId);
   }
 
   @Delete(':username/follow')

@@ -6,7 +6,7 @@ import { profileInclude } from './profile.query';
 
 /**
  * {@link ProfileService}
- * 
+ *
  * @author Tom Schuh
  */
 @Injectable()
@@ -14,38 +14,42 @@ export class ProfileService {
   constructor(private readonly prismaService: PrismaService) {}
 
   /**
-   * Finds and returns user profile by given username.
-   * 
+   * Finds and returns user's profile by given username.
+   *
    * @param username user identificator used for finding profile.
    * @param currentUserId identificator of currently logged user.
    * @returns profile in wrapper object {@link ProfileRes}.
    */
   async findOne(username: string, currentUserId: number): Promise<ProfileRes> {
-    const user = await this.prismaService.user.findUnique({
-      where: { username: username },
-      include: profileInclude,
-    });
-    const { followedBy, password, updatedAt, createdAt, email, ...profile } =
-      user;
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: { username: username },
+        include: profileInclude,
+      });
+      const { followedBy, password, updatedAt, createdAt, email, ...profile } =
+        user;
 
-    return {
-      profile: {
-        ...profile,
-        following: this.following(followedBy, currentUserId),
-      },
-    };
+      return {
+        profile: {
+          ...profile,
+          following: followedBy.map((f) => f.id).includes(currentUserId),
+        },
+      };
+    } catch (error) {
+      catchNotFoundError(error);
+    }
   }
 
   /**
-   * Add user's profile in logged user's followings.
-   * 
+   * Adds user's profile in logged user's followings.
+   *
    * @param username user identificator used for following.
    * @param currentUserId identificator of currently logged user.
    * @returns followed profile in wrapper obejct {@link ProfileRes}.
    */
   async follow(username: string, currentUserId: number): Promise<ProfileRes> {
-    const user = await this.prismaService.user
-      .update({
+    try {
+      const user = await this.prismaService.user.update({
         where: { username: username },
         data: {
           followedBy: {
@@ -55,29 +59,31 @@ export class ProfileService {
           },
         },
         include: profileInclude,
-      })
-      .catch((err) => catchNotFoundError(err));
-    const { followedBy, password, updatedAt, createdAt, email, ...profile } =
-      user;
+      });
+      const { followedBy, password, updatedAt, createdAt, email, ...profile } =
+        user;
 
-    return {
-      profile: {
-        ...profile,
-        following: this.following(followedBy, currentUserId),
-      },
-    };
+      return {
+        profile: {
+          ...profile,
+          following: followedBy.map((f) => f.id).includes(currentUserId),
+        },
+      };
+    } catch (error) {
+      catchNotFoundError(error);
+    }
   }
 
   /**
-   * Remove user's profile from logged user's followings.
-   * 
+   * Removes user's profile from logged user's followings.
+   *
    * @param username user identificator used for following.
    * @param currentUserId identificator of currently logged user.
    * @returns unfollowed profile in wrapper obejct {@link ProfileRes}.
    */
   async unfollow(username: string, currentUserId: number): Promise<ProfileRes> {
-    let user = await this.prismaService.user
-      .update({
+    try {
+      let user = await this.prismaService.user.update({
         where: { username: username },
         data: {
           followedBy: {
@@ -87,23 +93,18 @@ export class ProfileService {
           },
         },
         include: profileInclude,
-      })
-      .catch((err) => catchNotFoundError(err));
-    const { followedBy, password, updatedAt, createdAt, email, ...profile } =
-      user;
+      });
+      const { followedBy, password, updatedAt, createdAt, email, ...profile } =
+        user;
 
-    return {
-      profile: {
-        ...profile,
-        following: this.following(followedBy, currentUserId),
-      },
-    };
-  }
-
-  private following(followedBy: any[], currentUserId: number): boolean {
-    if (followedBy.map((f) => f.id).includes(currentUserId)) {
-      return true;
+      return {
+        profile: {
+          ...profile,
+          following: followedBy.map((f) => f.id).includes(currentUserId),
+        },
+      };
+    } catch (error) {
+      catchNotFoundError(error);
     }
-    return false;
   }
 }

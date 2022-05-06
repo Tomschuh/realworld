@@ -1,3 +1,6 @@
+import { PaginationDto } from "@shared/dto/pagination.dto";
+import { ArticleListQueryDto } from "./dto/article-list-query.dto";
+
 const authorInclude = {
   select: {
     username: true,
@@ -29,29 +32,13 @@ export const articleInclude = {
   favoritedBy: favoritedByInclude,
 };
 
-export const commentSelect = {
-  id: true,
-  body: true,
-  createdAt: true,
-  updatedAt: true,
+export const commentInclude = {
   author: authorInclude,
 };
 
-export const listQuery = (whereClause: any, query: any) => ({
-  where: {
-    AND: whereClause,
-  },
-  include: articleInclude,
-  ...('limit' in query ? { take: query.limit } : {}),
-  ...('offset' in query ? { skip: query.offset } : {}),
-  orderBy: {
-    createdAt: 'desc' as const,
-  },
-});
-
-export const createListWhereClause = (query: any) => {
+export const createListWhereClause = (query: ArticleListQueryDto) => {
   const queries = [];
-  if ('tag' in query) {
+  if (query.tag) {
     queries.push({
       tagList: {
         some: {
@@ -60,7 +47,7 @@ export const createListWhereClause = (query: any) => {
       },
     });
   }
-  if ('author' in query) {
+  if (query.author) {
     queries.push({
       author: {
         username: {
@@ -69,7 +56,7 @@ export const createListWhereClause = (query: any) => {
       },
     });
   }
-  if ('favorited' in query) {
+  if (query.favorited) {
     queries.push({
       favoritedBy: {
         some: {
