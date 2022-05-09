@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { catchNotFoundError } from '@shared/prisma/prisma.error.catch';
+import { Prisma } from '@prisma/client';
+import { catchPrismaNotFoundError } from '@shared/prisma/prisma.error.catch';
 import { PrismaService } from '@shared/prisma/prisma.service';
+import e from 'express';
 import { ProfileRes } from './profile.interface';
 import { profileInclude } from './profile.query';
 
@@ -36,7 +38,10 @@ export class ProfileService {
         },
       };
     } catch (error) {
-      catchNotFoundError(error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        catchPrismaNotFoundError(error);
+      }
+      throw error;
     }
   }
 
@@ -70,7 +75,10 @@ export class ProfileService {
         },
       };
     } catch (error) {
-      catchNotFoundError(error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        catchPrismaNotFoundError(error);
+      }
+      throw error;
     }
   }
 
@@ -104,7 +112,10 @@ export class ProfileService {
         },
       };
     } catch (error) {
-      catchNotFoundError(error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        catchPrismaNotFoundError(error);
+      }
+      throw error;
     }
   }
 }

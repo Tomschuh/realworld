@@ -1,10 +1,13 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
+import { catchPrismaNotFoundError } from '@shared/prisma/prisma.error.catch';
 import { PrismaService } from '@shared/prisma/prisma.service';
+import { UserRequestData } from '@shared/request.include.user';
 import { UserRes } from '../user.interface';
 import { AuthHelper } from './auth.helper';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { JwtPayloadData } from './jwt.token';
 
 /**
  * {@link AuthService}
@@ -72,10 +75,29 @@ export class AuthService {
       throw new HttpException('Invalid password!', HttpStatus.UNAUTHORIZED);
     }
 
-    const payload = { email: user.email, userId: user.id };
+    const payload : JwtPayloadData = { email: user.email, userId: user.id };
     const token = this.authHelper.encodeJwtToken(payload);
-    console.log(token);
     const { password, ...userData } = user;
     return { user: { token, ...userData } };
+  }
+
+  async getUserRequestData(id: number): Promise<UserRequestData> {
+    // try {
+      
+    // } catch (error) {
+    //   if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    //     catchPrismaNotFoundError(error);
+    //   }
+    //   throw error;
+    // }
+
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        id: id,
+      },
+      rejectOnNotFound: false
+    });
+
+    return { id: user.id, email: user.email }
   }
 }

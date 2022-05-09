@@ -40,8 +40,7 @@ async function bootstrap() {
     document
   );
   const port = configService.get<number>('API_PORT');
-  
-  console.log(port);
+  console.log(port)
   await app.listen(port);
 }
 bootstrap();

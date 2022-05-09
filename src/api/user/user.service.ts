@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { catchNotFoundError } from '@shared/prisma/prisma.error.catch';
+import { Prisma } from '@prisma/client';
+import { catchPrismaNotFoundError } from '@shared/prisma/prisma.error.catch';
 import { PrismaService } from '@shared/prisma/prisma.service';
+import { UserRequestData } from '@shared/request.include.user';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UserRes } from './user.interface';
+import { UserRequestRes, UserRes } from './user.interface';
 
 /**
  * {@link UserService}
@@ -40,7 +42,8 @@ export class UserService {
     userDto: UpdateUserDto,
     currentUserId: number
   ): Promise<UserRes> {
-    const user = await this.prismaService.user
+    try {
+      const user = await this.prismaService.user
       .update({
         where: {
           id: currentUserId,
@@ -49,9 +52,14 @@ export class UserService {
           ...userDto,
           updatedAt: new Date(),
         },
-      })
-      .catch((err) => catchNotFoundError(err));
+      });
 
-    return { user: user };
+      return { user: user };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        catchPrismaNotFoundError(error);
+      }
+      throw error;
+    }
   }
 }

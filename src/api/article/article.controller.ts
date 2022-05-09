@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PaginationDto } from '@shared/dto/pagination.dto';
 import { JwtAuthGuard } from '../user/auth/jwt.guard';
 import { User } from '../user/user.decorator';
@@ -30,8 +30,8 @@ export class ArticleController {
     @ApiResponse({status: 200, description: 'List of articles successfully return.'})
     @ApiResponse({status: 400, description: 'Invalid request.'})
     async findAll(
-        @Query() query: ArticleListQueryDto, 
-        @User('userId') userId: number): Promise<ArticlesRes> {
+        @Param() query?: ArticleListQueryDto, 
+        @User('userId') userId?: number): Promise<ArticlesRes> {
         return await this.articleService.findAll(query, userId);
     }
     @Get('feed')

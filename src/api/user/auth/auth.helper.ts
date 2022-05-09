@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 const jwt = require('jsonwebtoken');
 import * as bcrypt from 'bcryptjs';
+import { JwtPayloadData } from './jwt.token';
 
 @Injectable()
 export class AuthHelper {
@@ -11,7 +12,7 @@ export class AuthHelper {
     return jwt.decode(token, null);
   }
 
-  encodeJwtToken(payload: object): string {
+  encodeJwtToken(payload: JwtPayloadData): string {
     return jwt.sign(
       {
         data: payload,

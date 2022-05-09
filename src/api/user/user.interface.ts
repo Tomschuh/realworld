@@ -1,4 +1,4 @@
-export interface UserData {
+export class UserData {
   username: string;
   email: string;
   token?: string;
@@ -6,6 +6,11 @@ export interface UserData {
   image: string;
 }
 
-export interface UserRes {
+export class UserRes {
   user: UserData;
+}
+
+export class UserRequestRes {
+  id: number;
+  username: string;
 }

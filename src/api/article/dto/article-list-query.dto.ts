@@ -1,15 +1,24 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { PaginationDto } from "@shared/dto/pagination.dto";
-import { IsString } from "class-validator";
+import { IsString, ValidateIf } from "class-validator";
 
 export class ArticleListQueryDto extends PaginationDto {
-  @ApiProperty()
-  @IsString()
+  @ApiProperty({
+    required: false
+  })
+  @IsString()  
+  @ValidateIf((object, value) => value)
   tag?: string;
-  @ApiProperty()
+  @ApiProperty({
+    required: false
+  })
   @IsString()
+  @ValidateIf((object, value) => value)
   author?: string;
-  @ApiProperty()
+  @ApiProperty({
+    required: false
+  })
+  @ValidateIf((object, value) => value)
   @IsString()
   favorited?: string;
 }

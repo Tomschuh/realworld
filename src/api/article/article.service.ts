@@ -1,7 +1,9 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PaginationDto } from '@shared/dto/pagination.dto';
-import { catchNotFoundError } from '@shared/prisma/prisma.error.catch';
+import { catchPrismaNotFoundError } from '@shared/prisma/prisma.error.catch';
 import { PrismaService } from '@shared/prisma/prisma.service';
+import e from 'express';
 import {
   ArticleRes,
   ArticlesRes,
@@ -124,7 +126,10 @@ export class ArticleService {
 
       return { article: mapArticleDataRes(currentUserId, article) };
     } catch (error) {
-      catchNotFoundError(error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        catchPrismaNotFoundError(error);
+      }
+      throw error;
     }
   }
 
@@ -199,7 +204,10 @@ export class ArticleService {
 
       return { article: mapArticleDataRes(currentUserId, article) };
     } catch (error) {
-      catchNotFoundError(error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        catchPrismaNotFoundError(error);
+      }
+      throw error;
     }
   }
 
@@ -251,7 +259,10 @@ export class ArticleService {
         },
       });
     } catch (error) {
-      catchNotFoundError(error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        catchPrismaNotFoundError(error);
+      }
+      throw error;
     }
   }
 
@@ -275,7 +286,10 @@ export class ArticleService {
         );
       }
     } catch (error) {
-      catchNotFoundError(error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        catchPrismaNotFoundError(error);
+      }
+      throw error;
     }
   }
 
@@ -353,7 +367,10 @@ export class ArticleService {
         },
       });
     } catch (error) {
-      catchNotFoundError(error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        catchPrismaNotFoundError(error);
+      }
+      throw error;
     }
   }
 
@@ -378,7 +395,10 @@ export class ArticleService {
         );
       }
     } catch (error) {
-      catchNotFoundError(error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        catchPrismaNotFoundError(error);
+      }
+      throw error;
     }
   }
 
@@ -407,7 +427,10 @@ export class ArticleService {
 
       return { article: mapArticleDataRes(currentUserId, article) };
     } catch (error) {
-      catchNotFoundError(error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        catchPrismaNotFoundError(error);
+      }
+      throw error;
     }
   }
 
@@ -435,7 +458,10 @@ export class ArticleService {
       });
       return { article: mapArticleDataRes(currentUserId, article) };
     } catch (error) {
-      catchNotFoundError(error);
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        catchPrismaNotFoundError(error);
+      }
+      throw error;
     }
   }
 }
